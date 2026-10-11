@@ -1,2 +1,1 @@
-# AetherMachO
-AetherMachO - Mach-O analysis and emulation engine for macOS/iOS
+# AetherMachO - Mach-O analysis and emulation engine for macOS/iOS
