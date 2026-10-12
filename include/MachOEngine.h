@@ -10,13 +10,25 @@
 
 namespace aether {
 
-class MachOEngine : public BinaryEngine {
+class AETHER_VMAPI MachOEngine : public BinaryEngine {
 public:
-  MachOEngine(EventConfig eventcfg = EventConfig{});
+  MachOEngine(std::string_view path, EventConfig eventcfg = EventConfig{});
   ~MachOEngine();
+
+  // Recursively pre-encode the main macho and its dependencies.
+  bool preEncode();
+
+protected:
+  addr_t recursiveLoad() override;
 
 protected:
   MachineARM64 m_machine;
+  std::string m_path;
 };
 
 } // namespace aether
+
+extern "C" {
+AETHER_VMAPI int engine_main(int argc, const char *argv[], int vmargc,
+                             const char *vmargv[]);
+}
