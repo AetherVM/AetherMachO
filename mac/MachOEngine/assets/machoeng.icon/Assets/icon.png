@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <!-- Canvas Base Gradient -->
+    <linearGradient id="baseGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#222834"/>
+      <stop offset="100%" stop-color="#11141A"/>
+    </linearGradient>
+
+    <!-- Bevel Light Rim -->
+    <linearGradient id="rimGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#5B6B82" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#1A202C" stop-opacity="0.2"/>
+    </linearGradient>
+
+    <!-- Core Glow -->
+    <radialGradient id="aetherGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00F2FE" stop-opacity="0.9"/>
+      <stop offset="50%" stop-color="#4FACFE" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Segment Ring Colors -->
+    <linearGradient id="textSegment" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F2FE"/>
+      <stop offset="100%" stop-color="#4FACFE"/>
+    </linearGradient>
+  </defs>
+
+  <!-- macOS App Icon Base Squircle -->
+  <rect x="96" y="96" width="832" height="832" rx="185" fill="url(#baseGrad)" stroke="url(#rimGrad)" stroke-width="6"/>
+
+  <!-- Background Grid Pattern (Binary Assembly Lines) -->
+  <g opacity="0.12" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="8,8">
+    <line x1="256" y1="200" x2="256" y2="824"/>
+    <line x1="512" y1="200" x2="512" y2="824"/>
+    <line x1="768" y1="200" x2="768" y2="824"/>
+    <line x1="200" y1="256" x2="824" y2="256"/>
+    <line x1="200" y1="512" x2="824" y2="512"/>
+    <line x1="200" y1="768" x2="824" y2="768"/>
+  </g>
+
+  <!-- Core Emulation Glow Base -->
+  <circle cx="512" cy="512" r="280" fill="url(#aetherGlow)"/>
+
+  <!-- Mach-O Header Glass Ring -->
+  <circle cx="512" cy="512" r="240" fill="none" stroke="#FFFFFF" stroke-opacity="0.15" stroke-width="24"/>
+  
+  <!-- Outer Mach-O Segments Ring -->
+  <!-- __TEXT Segment Arc -->
+  <path d="M 512 272 A 240 240 0 0 1 752 512" fill="none" stroke="url(#textSegment)" stroke-width="28" stroke-linecap="round"/>
+  <!-- __DATA Segment Arc -->
+  <path d="M 752 512 A 240 240 0 0 1 512 752" fill="none" stroke="#6B73FF" stroke-width="28" stroke-linecap="round"/>
+  <!-- __LINKEDIT Segment Arc -->
+  <path d="M 512 752 A 240 240 0 0 1 272 512" fill="none" stroke="#FF007F" stroke-width="28" stroke-dasharray="160 30" stroke-linecap="round"/>
+
+  <!-- Central Processor Die (Emulation Core) -->
+  <rect x="412" y="412" width="200" height="200" rx="36" fill="#1A2232" stroke="#00F2FE" stroke-width="4"/>
+  <rect x="442" y="442" width="140" height="140" rx="20" fill="#0D1117" stroke="#4FACFE" stroke-width="2"/>
+
+  <!-- CPU Pin Traces (AArch64 / x86 Interop) -->
+  <path d="M 412 452 L 352 452 M 412 512 L 352 512 M 412 572 L 352 572" stroke="#00F2FE" stroke-width="6" stroke-linecap="round"/>
+  <path d="M 612 452 L 672 452 M 612 512 L 672 512 M 612 572 L 672 572" stroke="#00F2FE" stroke-width="6" stroke-linecap="round"/>
+  <path d="M 452 412 L 452 352 M 512 412 L 512 352 M 572 412 L 572 352" stroke="#00F2FE" stroke-width="6" stroke-linecap="round"/>
+  <path d="M 452 612 L 452 672 M 512 612 L 512 672 M 572 612 L 572 672" stroke="#00F2FE" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Magic Bytes Signature Text in Core -->
+  <text x="512" y="520" text-anchor="middle" font-family="SF Pro Display, Menlo, monospace" font-size="22" font-weight="bold" fill="#00F2FE" letter-spacing="2">0xFEEDFACF</text>
+</svg>
