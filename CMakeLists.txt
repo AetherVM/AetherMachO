@@ -33,11 +33,13 @@ configure_file(
 )
 
 set(HEADER_FILES
+  include/DarwinUtils.h
   include/MachOEngine.h
   ${CMAKE_BINARY_DIR}/generated/Version.h
 )
 
 set(SOURCE_FILES
+  src/DarwinUtils.mm
   src/MachOEngine.cpp
 )
 
@@ -73,6 +75,7 @@ target_link_options(MachOEngine PRIVATE
   -Wl,-rpath,@loader_path
   -Wl,-rpath,@loader_path/../lib
   -Wl,-install_name,@rpath/libMachOEngine.dylib
+  -Wl,-framework,Foundation
 )
 
 target_include_directories(MachOEngine PUBLIC

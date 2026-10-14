@@ -8,7 +8,17 @@
 #include <AetherArch.h>
 #include <AetherVM.h>
 
+#include <filesystem>
+
+namespace fs = std::filesystem;
+
 namespace aether {
+
+enum class MachOType {
+  MacCLI,
+  MacApp,
+  iOSApp,
+};
 
 class AETHER_VMAPI MachOEngine : public BinaryEngine {
 public:
@@ -18,12 +28,15 @@ public:
   // Recursively pre-encode the main macho and its dependencies.
   bool preEncode();
 
+  MachOType machoType();
+  fs::path cacheRoot();
+
 protected:
   addr_t recursiveLoad() override;
 
 protected:
   MachineARM64 m_machine;
-  std::string m_path;
+  fs::path m_path;
 };
 
 } // namespace aether

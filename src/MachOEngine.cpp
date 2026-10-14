@@ -3,17 +3,74 @@
 // SPDX-License-Identifier: Apache License, Version 2.0
 // See LICENSE file in the root directory for full license text.
 
+#include <AetherBinary.h>
+#include <DarwinUtils.h>
 #include <MachOEngine.h>
 #include <Utils.h>
 
 namespace aether {
 
 MachOEngine::MachOEngine(std::string_view path, EventConfig eventcfg)
-    : BinaryEngine(&m_machine, eventcfg), m_path(path) {}
+    : BinaryEngine(&m_machine, eventcfg), m_path(fs::weakly_canonical(path)) {}
 
 MachOEngine::~MachOEngine() {}
 
-bool MachOEngine::preEncode() { return false; }
+MachOType MachOEngine::machoType() {
+  auto parent = m_path.parent_path();
+  // .app/macho
+  if (parent.extension() == ".app")
+    return MachOType::iOSApp;
+  // .app/Contents/MacOS/macho, otherwise as CLI program
+  return parent.filename() == "MacOS" ? MachOType::MacApp : MachOType::MacCLI;
+}
+
+fs::path MachOEngine::cacheRoot() {
+  auto cachedir = fs::path(getCacheDirectory());
+  auto parent = m_path.parent_path();
+  // .app/macho
+  if (parent.extension() == ".app") {
+    cachedir /= "iOS";
+    cachedir /= parent.filename();
+  }
+  // .app/Contents/MacOS/macho
+  else if (parent.filename() == "MacOS") {
+    cachedir /= "Mac";
+    cachedir /= parent.parent_path().parent_path().filename();
+  } else {
+    cachedir /= "CLI";
+    cachedir /= m_path.filename();
+  }
+
+  if (!fs::exists(cachedir))
+    fs::create_directories(cachedir);
+  return cachedir;
+}
+
+bool MachOEngine::preEncode() {
+#if TARGET_OS_OSX
+  auto cachedir = getCacheDirectory();
+  int total = 0;
+  for (auto entry : fs::recursive_directory_iterator(m_path.parent_path())) {
+    auto path = entry.path().string();
+    if (entry.is_regular_file() && validMachO(path)) {
+      auto aevm = (cachedir / entry.path().filename()).string();
+      auto bin = aether::New(path);
+      if (!bin) {
+        log_print(Runtime, "Failed to parse {}.", path);
+        continue;
+      }
+      log_print(Develop, "Encoding {} to {}...", path, aevm);
+      BinaryEngine::preEncode(bin, aevm);
+      aether::Delete(bin);
+    }
+  }
+
+  log_print(Develop, "Totally encoded {} macho files.", total);
+  return total > 0;
+#else
+  return false;
+#endif
+}
 
 addr_t MachOEngine::recursiveLoad() { return 0; }
 
@@ -66,7 +123,7 @@ int engine_main(int argc, const char *argv[], int vmargc,
   if (action == "run")
     return engine.runMain(vmargc, vmargv);
 
-  aether::log_print(aether::Runtime, "The action '{}' doesn't support.",
+  aether::log_print(aether::Runtime, "The action '{}' isn't supported.",
                     action);
   return -1;
 }
