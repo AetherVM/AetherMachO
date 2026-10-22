@@ -8,14 +8,15 @@ use dioxus::prelude::*;
 
 use components::{Log, MachOList, MachOListState};
 use std::{
+    ffi::OsString,
     io::Read,
     path::{Path, PathBuf},
 };
-use utils::Logger;
+use utils::{engine_main, Logger};
 
 /// Define a components module that contains all shared components for our app.
 mod components;
-mod utils;
+pub mod utils;
 
 // We can import assets in dioxus with the `asset!` macro. This macro takes a path to an asset relative to the crate root.
 // The macro returns an `Asset` type that will display as the path to the asset in the browser or a local path in desktop bundles.
@@ -99,6 +100,23 @@ fn App() -> Element {
                                     macho_list
                                         .add(title.clone(), executable.to_string_lossy().into_owned());
                                     logger.append(&format!("Imported Mach-O target: {title}"));
+                                    let mut path_argument = OsString::from("-path=");
+                                    path_argument.push(executable.as_os_str());
+                                    let engine_args = [
+                                        OsString::from("MachOEngine"),
+                                        OsString::from("-action=encode"),
+                                        path_argument,
+                                    ];
+                                    match engine_main(&engine_args, &[]) {
+                                        Ok(0) => logger
+                                            .append(&format!("Encoded Mach-O target: {title}")),
+                                        Ok(status) => logger.append(&format!(
+                                            "Failed to encode Mach-O target {title}: engine_main returned {status}"
+                                        )),
+                                        Err(error) => logger.append(&format!(
+                                            "Failed to encode Mach-O target {title}: {error}"
+                                        )),
+                                    }
                                 }
                                 Err(error) => {
                                     logger

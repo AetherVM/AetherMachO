@@ -30,6 +30,7 @@ public:
 
   MachOType machoType();
   fs::path cacheRoot();
+  bool hasWXPermission();
 
 protected:
   addr_t recursiveLoad() override;

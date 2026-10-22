@@ -46,30 +46,35 @@ fs::path MachOEngine::cacheRoot() {
   return cachedir;
 }
 
-bool MachOEngine::preEncode() {
+bool MachOEngine::hasWXPermission() {
 #if TARGET_OS_OSX
+  return machoType() != MachOType::iOSApp;
+#else
+  return false;
+#endif
+}
+
+bool MachOEngine::preEncode() {
+  auto haswx = hasWXPermission();
   auto cachedir = getCacheDirectory();
   int total = 0;
   for (auto entry : fs::recursive_directory_iterator(m_path.parent_path())) {
     auto path = entry.path().string();
     if (entry.is_regular_file() && validMachO(path)) {
-      auto aevm = (cachedir / entry.path().filename()).string();
+      auto aevm = (cachedir / entry.path().filename()).string() + ".aevm";
       auto bin = aether::New(path);
       if (!bin) {
         log_print(Runtime, "Failed to parse {}.", path);
         continue;
       }
       log_print(Develop, "Encoding {} to {}...", path, aevm);
-      BinaryEngine::preEncode(bin, aevm);
+      BinaryEngine::preEncode(bin, aevm, haswx);
       aether::Delete(bin);
     }
   }
 
   log_print(Develop, "Totally encoded {} macho files.", total);
   return total > 0;
-#else
-  return false;
-#endif
 }
 
 addr_t MachOEngine::recursiveLoad() { return 0; }
