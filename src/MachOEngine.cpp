@@ -70,7 +70,7 @@ bool MachOEngine::preEncode() {
   auto cachedir = cacheRoot();
   int total = 0;
   for (auto &path : machos) {
-    auto bin = aether::New(path);
+    auto bin = aether::New(path.c_str());
     if (!bin) {
       log_print(RuntimeRaw, "Failed to parse {}.", path);
       continue;
