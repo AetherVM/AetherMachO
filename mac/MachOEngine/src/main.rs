@@ -12,7 +12,7 @@ use std::{
     io::Read,
     path::{Path, PathBuf},
 };
-use utils::{engine_main, Logger};
+use utils::{capture_stdio, engine_main, Logger};
 
 /// Define a components module that contains all shared components for our app.
 mod components;
@@ -45,6 +45,14 @@ fn App() -> Element {
     use_context_provider(|| logger);
     use_context_provider(MachOListState::new);
     let mut macho_list = use_context::<MachOListState>();
+
+    use_future(move || async move {
+        if let Some(mut lines) = capture_stdio() {
+            while let Some(line) = lines.recv().await {
+                logger.append(&line);
+            }
+        }
+    });
 
     rsx! {
         document::Link { rel: "stylesheet", href: MAIN_CSS }

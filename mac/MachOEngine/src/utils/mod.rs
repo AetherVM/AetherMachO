@@ -7,4 +7,4 @@ mod engine;
 mod log;
 
 pub use engine::{engine_main, EngineMainError};
-pub use log::Logger;
+pub use log::{capture_stdio, Logger};

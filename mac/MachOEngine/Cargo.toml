@@ -11,9 +11,10 @@ chrono = "0.4.45"
 dioxus = { version = "0.7", features = ["native"] }
 dioxus-native = "0.7"
 euclid = "0.22.14"
+libc = "0.2"
 plist = "1"
 rfd = "0.17.2"
-tokio = "1.53.2"
+tokio = { version = "1.53.2", features = ["sync"] }
 
 [features]
 default = ["desktop"]

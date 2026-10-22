@@ -10,6 +10,7 @@ dependencies = [
  "dioxus",
  "dioxus-native",
  "euclid",
+ "libc",
  "plist",
  "rfd",
  "tokio",

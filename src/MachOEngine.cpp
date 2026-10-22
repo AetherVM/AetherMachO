@@ -11,7 +11,8 @@
 namespace aether {
 
 MachOEngine::MachOEngine(std::string_view path, EventConfig eventcfg)
-    : BinaryEngine(&m_machine, eventcfg), m_path(fs::weakly_canonical(path)) {}
+    : MachineARM64(), BinaryEngine(this, eventcfg),
+      m_path(fs::weakly_canonical(path)) {}
 
 MachOEngine::~MachOEngine() {}
 
@@ -25,7 +26,7 @@ MachOType MachOEngine::machoType() {
 }
 
 fs::path MachOEngine::cacheRoot() {
-  auto cachedir = fs::path(getCacheDirectory());
+  auto cachedir = fs::path(getCacheDirectory()) / "MachOEngine";
   auto parent = m_path.parent_path();
   // .app/macho
   if (parent.extension() == ".app") {
@@ -38,7 +39,6 @@ fs::path MachOEngine::cacheRoot() {
     cachedir /= parent.parent_path().parent_path().filename();
   } else {
     cachedir /= "CLI";
-    cachedir /= m_path.filename();
   }
 
   if (!fs::exists(cachedir))
@@ -55,25 +55,34 @@ bool MachOEngine::hasWXPermission() {
 }
 
 bool MachOEngine::preEncode() {
-  auto haswx = hasWXPermission();
-  auto cachedir = getCacheDirectory();
-  int total = 0;
-  for (auto entry : fs::recursive_directory_iterator(m_path.parent_path())) {
-    auto path = entry.path().string();
-    if (entry.is_regular_file() && validMachO(path)) {
-      auto aevm = (cachedir / entry.path().filename()).string() + ".aevm";
-      auto bin = aether::New(path);
-      if (!bin) {
-        log_print(Runtime, "Failed to parse {}.", path);
-        continue;
-      }
-      log_print(Develop, "Encoding {} to {}...", path, aevm);
-      BinaryEngine::preEncode(bin, aevm, haswx);
-      aether::Delete(bin);
+  std::vector<std::string> machos;
+  if (machoType() == MachOType::MacCLI) {
+    machos.push_back(m_path.string());
+  } else {
+    for (auto entry : fs::recursive_directory_iterator(m_path.parent_path())) {
+      auto path = entry.path().string();
+      if (entry.is_regular_file() && validMachO(path))
+        machos.push_back(path);
     }
   }
 
-  log_print(Develop, "Totally encoded {} macho files.", total);
+  auto haswx = hasWXPermission();
+  auto cachedir = cacheRoot();
+  int total = 0;
+  for (auto &path : machos) {
+    auto bin = aether::New(path);
+    if (!bin) {
+      log_print(RuntimeRaw, "Failed to parse {}.", path);
+      continue;
+    }
+    auto aevm = (cachedir / fs::path(path).filename()).string() + ".aevm";
+    log_print(RuntimeRaw, "Encoding {} to {}...", path, aevm);
+    BinaryEngine::preEncode(bin, aevm, haswx);
+    aether::Delete(bin);
+    ++total;
+  }
+
+  log_print(RuntimeRaw, "Totally encoded {} macho files.", total);
   return total > 0;
 }
 
@@ -85,7 +94,7 @@ int engine_main(int argc, const char *argv[], int vmargc,
                 const char *vmargv[]) {
   int dbgport = 61012; // defined on 12/Oct/2026
   if (argc == 1) {
-    aether::log_print(aether::Runtime,
+    aether::log_print(aether::RuntimeRaw,
                       "Usage: MachOEngine -action=<encode|run> "
                       "-path=</path/to/macho> [-debug] [-dbgport=<{}>]",
                       dbgport);
@@ -106,7 +115,7 @@ int engine_main(int argc, const char *argv[], int vmargc,
       dbgport = std::stoi(arg.substr(9).data());
   }
   if (!fs::exists(path)) {
-    aether::log_print(aether::Runtime, "The path '{}' doesn't exist.", path);
+    aether::log_print(aether::RuntimeRaw, "The path '{}' doesn't exist.", path);
     return -1;
   }
 
@@ -116,7 +125,7 @@ int engine_main(int argc, const char *argv[], int vmargc,
       eventcfg.debug = debug;
       eventcfg.dbgport = dbgport;
     } else {
-      aether::log_print(aether::Runtime, "The debug port '{}' is invalid.",
+      aether::log_print(aether::RuntimeRaw, "The debug port '{}' is invalid.",
                         dbgport);
       return -1;
     }
@@ -128,7 +137,7 @@ int engine_main(int argc, const char *argv[], int vmargc,
   if (action == "run")
     return engine.runMain(vmargc, vmargv);
 
-  aether::log_print(aether::Runtime, "The action '{}' isn't supported.",
+  aether::log_print(aether::RuntimeRaw, "The action '{}' isn't supported.",
                     action);
   return -1;
 }

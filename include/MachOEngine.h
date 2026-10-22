@@ -20,7 +20,7 @@ enum class MachOType {
   iOSApp,
 };
 
-class AETHER_VMAPI MachOEngine : public BinaryEngine {
+class AETHER_VMAPI MachOEngine : public MachineARM64, public BinaryEngine {
 public:
   MachOEngine(std::string_view path, EventConfig eventcfg = EventConfig{});
   ~MachOEngine();
@@ -36,7 +36,6 @@ protected:
   addr_t recursiveLoad() override;
 
 protected:
-  MachineARM64 m_machine;
   fs::path m_path;
 };
 
