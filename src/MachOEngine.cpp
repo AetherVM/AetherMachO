@@ -101,7 +101,10 @@ addr_t MachOEngine::recursiveLoad() {
   return reinterpret_cast<addr_t>(entry);
 }
 
-void MachOEngine::Unload() { BinaryEngine::Unload(); }
+void MachOEngine::Unload() {
+  aether_dlclose_all();
+  BinaryEngine::Unload();
+}
 
 int MachOEngine::runMain(int argc, const char *argv[]) {
   auto cacheroot = cacheRoot().string();

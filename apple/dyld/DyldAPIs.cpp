@@ -1754,6 +1754,13 @@ int APIs::dlclose(void* handle)
     return 0;
 }
 
+// MachOEngine added: force unload of all images, including dependents
+void APIs::unloadAll()
+{
+    RecursiveAutoLock apiLock(*this);
+    unloadAllImages();
+}
+
 bool APIs::dlopen_preflight(const char* path)
 {
     dyld3::ScopedTimer timer(DBG_DYLD_TIMING_DLOPEN_PREFLIGHT, path, 0, 0);

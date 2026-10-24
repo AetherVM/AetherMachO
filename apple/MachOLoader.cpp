@@ -111,6 +111,11 @@ int aether_dladdr(const void *addr, Dl_info *info) {
 
 int aether_dlclose(void *handle) { return gAPIs ? gAPIs->dlclose(handle) : -1; }
 
+void aether_dlclose_all() {
+  if (gAPIs)
+    gAPIs->unloadAll();
+}
+
 bool aether_dlopen_preflight(const char *path) {
   return gAPIs && gAPIs->dlopen_preflight(path);
 }

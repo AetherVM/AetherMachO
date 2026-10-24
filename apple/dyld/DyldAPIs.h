@@ -77,6 +77,7 @@ public:
     virtual     int                         dladdr(const void*, Dl_info* result);
     virtual     void*                       dlopen(const char* path, int mode) API_UNAVAILABLE(driverkit);
     virtual     int                         dlclose(void* handle) API_UNAVAILABLE(driverkit);
+                void                        unloadAll();  // MachOEngine added
     virtual     char*                       dlerror() API_UNAVAILABLE(driverkit);
     virtual     void*                       dlsym(void* handle, const char* symbol);
     virtual     bool                        dlopen_preflight(const char* path) API_UNAVAILABLE(driverkit);

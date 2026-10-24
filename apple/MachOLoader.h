@@ -15,3 +15,5 @@ int aether_dlclose(void *handle);
 bool aether_dlopen_preflight(const char *path);
 // Returns the entry (main) address of an executable opened by aether_dlopen.
 void *aether_dlentry(void *handle);
+// Force-unloads every image loaded through aether_dlopen, with dependents.
+void aether_dlclose_all();

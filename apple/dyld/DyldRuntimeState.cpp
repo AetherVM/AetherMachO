@@ -1394,6 +1394,7 @@ public:
     };
     Reaper(RuntimeState& state, Array<LoaderAndUse>& unloadables);
     void garbageCollect();
+    void markAllDead();
     void finalizeDeadImages();
 
 private:
@@ -1524,6 +1525,14 @@ void Reaper::garbageCollect()
     _deadCount = (uint32_t)_unloadables.count() - inUseCount();
 }
 
+// MachOEngine added: treat every unloadable image as dead, regardless of references
+void Reaper::markAllDead()
+{
+    for ( LoaderAndUse& lu : _unloadables )
+        lu.inUse = false;
+    _deadCount = (uint32_t)_unloadables.count();
+}
+
 void Reaper::finalizeDeadImages()
 {
     if ( _deadCount == 0 )
@@ -1571,6 +1580,15 @@ void Reaper::finalizeDeadImages()
 // Also note that this is done within the _apiLock lock, so any dlopen/dlclose
 // on other threads are blocked while this garbage collections runs.
 //
+// MachOEngine added: unload every non-cache image, ignoring dlopen counts and neverUnload
+void RuntimeState::unloadAllImages()
+{
+    locks.withLoadersWriteLockAndProtectedStack([&] {
+        _dlopenRefCounts.clear();
+    });
+    garbageCollectInner(true);
+}
+
 void RuntimeState::garbageCollectImages()
 {
     // if GC is already being done, just bump count, so GC does an extra interation
@@ -1580,12 +1598,12 @@ void RuntimeState::garbageCollectImages()
 
     // if some termination routine called GC during our work, redo GC on its behalf
     do {
-        garbageCollectInner();
+        garbageCollectInner(false);
         prevCount = atomic_fetch_add_explicit(&_gcCount, -1, std::memory_order_relaxed);
     } while ( prevCount > 1 );
 }
 
-void RuntimeState::garbageCollectInner()
+void RuntimeState::garbageCollectInner(bool forceAll)
 {
     static const bool verbose = false;
 
@@ -1593,7 +1611,7 @@ void RuntimeState::garbageCollectInner()
     locks.withLoadersReadLock(^{
         for ( const Loader* ldr : loaded ) {
             if ( !ldr->dylibInDyldCache ) {
-                bool inUse = ldr->neverUnload;
+                bool inUse = forceAll ? false : ldr->neverUnload;
                 unloadables.push_back({ ldr, inUse });
                 if ( verbose )
                     this->log("unloadable[%llu] neverUnload=%d %p %s\n", unloadables.count(), inUse, ldr->loadAddress(*this), ldr->path(*this));
@@ -1602,7 +1620,10 @@ void RuntimeState::garbageCollectInner()
     });
     // make reaper object to do garbage collection and notifications
     Reaper reaper(*this, unloadables);
-    reaper.garbageCollect();
+    if ( forceAll )
+        reaper.markAllDead();
+    else
+        reaper.garbageCollect();
 
     // FIXME: we should sort dead images so higher level ones are terminated first
 

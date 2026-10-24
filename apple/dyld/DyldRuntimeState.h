@@ -731,6 +731,7 @@ public:
 
     void                        incDlRefCount(const Loader* ldr);  // used by dlopen
     void                        decDlRefCount(const Loader* ldr);  // used by dlclose
+    void                        unloadAllImages();                 // MachOEngine added
 
     void                        setLaunchMissingDylib(const char* missingDylibPath, const char* clientUsingDylib);
     void                        setLaunchMissingSymbol(const char* missingSymbolName, const char* dylibThatShouldHaveSymbol, const char* clientUsingSymbol);
@@ -865,7 +866,7 @@ private:
     void                        appendInterposingTuples(const Loader* ldr, const uint8_t* dylibTuples, uint32_t tupleCount);
 #endif
     void                        garbageCollectImages();
-    void                        garbageCollectInner();
+    void                        garbageCollectInner(bool forceAll = false);
     void                        removeLoaders(const std::span<const Loader*>& loadersToRemove);
     void                        setUpLogging();
 #if SUPPORT_ON_DISK_PREBUILTLOADERS
