@@ -88,8 +88,17 @@ bool MachOEngine::preEncode() {
 }
 
 addr_t MachOEngine::recursiveLoad() {
-  auto handle = aether_dlopen(m_path.c_str(), RTLD_NOW);
-  return 0;
+  auto handle = aether_dlopen(m_path.c_str(), RTLD_NOW | RTLD_LOCAL);
+  if (!handle) {
+    auto err = aether_dlerror();
+    log_print(RuntimeRaw, "Failed to load {}: {}", m_path.string(),
+              err ? err : "unknown error");
+    return 0;
+  }
+  auto entry = aether_dlentry(handle);
+  if (!entry)
+    log_print(RuntimeRaw, "No entry point found in {}.", m_path.string());
+  return reinterpret_cast<addr_t>(entry);
 }
 
 void MachOEngine::Unload() { BinaryEngine::Unload(); }

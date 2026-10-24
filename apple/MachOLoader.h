@@ -13,3 +13,5 @@ char *aether_dlerror();
 int aether_dladdr(const void *addr, Dl_info *info);
 int aether_dlclose(void *handle);
 bool aether_dlopen_preflight(const char *path);
+// Returns the entry (main) address of an executable opened by aether_dlopen.
+void *aether_dlentry(void *handle);

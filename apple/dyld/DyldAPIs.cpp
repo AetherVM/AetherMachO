@@ -1414,7 +1414,8 @@ void* APIs::dlopen_from(const char* path, int mode, void* addressInCaller)
 #if TARGET_OS_SIMULATOR
             options.canBeExecutable  = (strncmp(config.process.progname, "IBDesignablesAgent", 18) == 0);
 #else
-            options.canBeExecutable  = (config.process.platform == Platform::macOS);
+            // MachOEngine modified: allow dlopen() of executables of any platform
+            options.canBeExecutable  = true;
 #endif
             options.forceUnloadable  = (mode & RTLD_UNLOADABLE);
             options.requestorNeedsFallbacks = caller ? caller->pre2022Binary : false;
