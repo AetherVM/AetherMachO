@@ -23,10 +23,12 @@ enum class MachOType {
 class AETHER_VMAPI MachOEngine : public MachineARM64, public BinaryEngine {
 public:
   MachOEngine(std::string_view path, EventConfig eventcfg = EventConfig{});
-  ~MachOEngine();
+  virtual ~MachOEngine();
 
   // Recursively pre-encode the main macho and its dependencies.
   bool preEncode();
+
+  int runMain(int argc, const char *argv[]);
 
   MachOType machoType();
   fs::path cacheRoot();
@@ -34,6 +36,7 @@ public:
 
 protected:
   addr_t recursiveLoad() override;
+  void Unload() override;
 
 protected:
   fs::path m_path;

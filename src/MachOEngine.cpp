@@ -88,6 +88,13 @@ bool MachOEngine::preEncode() {
 
 addr_t MachOEngine::recursiveLoad() { return 0; }
 
+void MachOEngine::Unload() { BinaryEngine::Unload(); }
+
+int MachOEngine::runMain(int argc, const char *argv[]) {
+  auto cacheroot = cacheRoot().string();
+  return BinaryEngine::runMain(argc, argv, cacheroot);
+}
+
 } // namespace aether
 
 int engine_main(int argc, const char *argv[], int vmargc,
