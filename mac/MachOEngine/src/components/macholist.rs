@@ -5,6 +5,28 @@
 
 use crate::utils::Logger;
 use dioxus::prelude::*;
+use std::{
+    io::{BufRead, BufReader, Read},
+    process::Stdio,
+};
+use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
+
+fn forward_lines(stream: impl Read + Send + 'static, tx: UnboundedSender<String>) {
+    std::thread::spawn(move || {
+        let mut reader = BufReader::new(stream);
+        let mut buffer = Vec::new();
+        loop {
+            buffer.clear();
+            match reader.read_until(b'\n', &mut buffer) {
+                Ok(0) | Err(_) => break,
+                Ok(_) => {}
+            }
+            if tx.send(String::from_utf8_lossy(&buffer).into_owned()).is_err() {
+                break;
+            }
+        }
+    });
+}
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct MachOItem {
@@ -89,12 +111,45 @@ fn MachOItemRow(item: MachOItem, on_delete: EventHandler<MachOItem>) -> Element 
                     class: "macho-action macho-start rounded px-2 py-1 text-xs font-medium",
                     onclick: move |_| {
                         let argument = list.startup_argument.read().clone();
-                        let mut command = std::process::Command::new(&start_item.path);
-                        if !argument.is_empty() {
-                            command.arg(&argument);
-                        }
+                        // Re-launch this executable in CLI mode: MachOEngine <macho> [arguments...]
+                        let exe = match std::env::current_exe() {
+                            Ok(exe) => exe,
+                            Err(error) => {
+                                logger.append(&format!("Failed to locate MachOEngine: {error}"));
+                                return;
+                            }
+                        };
+                        let mut command = std::process::Command::new(exe);
+                        command
+                            .arg(&start_item.path)
+                            .args(argument.split_whitespace())
+                            .stdin(Stdio::null())
+                            .stdout(Stdio::piped())
+                            .stderr(Stdio::piped());
                         match command.spawn() {
-                            Ok(child) => {
+                            Ok(mut child) => {
+                                let (tx, mut rx) = unbounded_channel::<String>();
+                                if let Some(out) = child.stdout.take() {
+                                    forward_lines(out, tx.clone());
+                                }
+                                if let Some(err) = child.stderr.take() {
+                                    forward_lines(err, tx.clone());
+                                }
+                                let pid = child.id();
+                                let title = start_item.title.clone();
+                                // Reaper thread reports the exit status once both pipes are drained.
+                                std::thread::spawn(move || {
+                                    let status = child.wait();
+                                    let _ = tx.send(match status {
+                                        Ok(status) => format!("Mach-O target {title} exited: {status}"),
+                                        Err(error) => format!("Failed to wait for {title}: {error}"),
+                                    });
+                                });
+                                spawn(async move {
+                                    while let Some(line) = rx.recv().await {
+                                        logger.append(line.trim_end_matches(['\n', '\r']));
+                                    }
+                                });
                                 logger
                                     .append(
                                         &format!(
@@ -105,7 +160,7 @@ fn MachOItemRow(item: MachOItem, on_delete: EventHandler<MachOItem>) -> Element 
                                             } else {
                                                 format!(" with argument {argument:?}")
                                             },
-                                            child.id(),
+                                            pid,
                                         ),
                                     )
                             }

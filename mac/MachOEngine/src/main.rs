@@ -10,6 +10,7 @@ use components::{Log, MachOList, MachOListState};
 use std::{
     ffi::OsString,
     io::Read,
+    os::unix::ffi::OsStrExt,
     path::{Path, PathBuf},
 };
 use utils::{capture_stdio, engine_main, Logger};
@@ -26,6 +27,37 @@ const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");
 
 fn main() {
     const APP_NAME: &str = "MachOEngine";
+
+    // CLI mode: MachOEngine [argv] /path/to/macho [vmargv]
+    let args: Vec<OsString> = std::env::args_os().collect();
+    if args.len() > 1 {
+        let macho_index = args
+            .iter()
+            .skip(1)
+            .position(|arg| !arg.as_bytes().starts_with(b"-"))
+            .map(|index| index + 1);
+        let (mut engine_args, vm_args) = match macho_index {
+            Some(index) => {
+                let mut engine_args = args[..index].to_vec();
+                let mut path_argument = OsString::from("-path=");
+                path_argument.push(&args[index]);
+                engine_args.push(path_argument);
+                // The guest sees the Mach-O path as its argv[0].
+                (engine_args, args[index..].to_vec())
+            }
+            None => (args.clone(), Vec::new()),
+        };
+        if engine_args.is_empty() {
+            engine_args.push(OsString::from(APP_NAME));
+        }
+        match engine_main(&engine_args, &vm_args) {
+            Ok(status) => std::process::exit(status),
+            Err(error) => {
+                eprintln!("{APP_NAME}: {error}");
+                std::process::exit(-1);
+            }
+        }
+    }
 
     // Dioxus reads these values when building the desktop window title and the macOS About panel.
     std::env::set_var("DIOXUS_APP_TITLE", APP_NAME);
