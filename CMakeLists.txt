@@ -60,6 +60,7 @@ target_link_libraries(MachOEngine PRIVATE
 )
 
 target_include_directories(MachOEngine PRIVATE 
+  apple
   include
   ${CMAKE_BINARY_DIR}
 )

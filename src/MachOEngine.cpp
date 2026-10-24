@@ -6,6 +6,7 @@
 #include <AetherBinary.h>
 #include <DarwinUtils.h>
 #include <MachOEngine.h>
+#include <MachOLoader.h>
 #include <Utils.h>
 
 namespace aether {
@@ -86,7 +87,10 @@ bool MachOEngine::preEncode() {
   return total > 0;
 }
 
-addr_t MachOEngine::recursiveLoad() { return 0; }
+addr_t MachOEngine::recursiveLoad() {
+  auto handle = aether_dlopen(m_path.c_str(), RTLD_NOW);
+  return 0;
+}
 
 void MachOEngine::Unload() { BinaryEngine::Unload(); }
 
