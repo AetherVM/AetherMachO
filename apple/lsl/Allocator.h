@@ -242,7 +242,7 @@ struct VIS_HIDDEN Lock {
     Lock(Lock&&)                    = default;
     Lock& operator=(Lock&&)         = default;
     Lock& operator=(const Lock&)    = default;
-    Lock(dyld4::RuntimeState* runtimeState, os_unfair_lock_t lock) : _runtimeState(runtimeState), _lock(lock) {}
+    Lock(dyld4::RuntimeState* runtimeState, pthread_mutex_t* lock) : _runtimeState(runtimeState), _lock(lock) {}
 
     void assertNotOwner();
     void assertOwner();
@@ -256,7 +256,7 @@ private:
     void lock();
     void unlock();
     dyld4::RuntimeState*    _runtimeState   = nullptr;
-    os_unfair_lock_t        _lock           = nullptr;
+    pthread_mutex_t*        _lock           = nullptr;
 };
 #endif // !TARGET_OS_EXCLAVEKIT
 #pragma mark -

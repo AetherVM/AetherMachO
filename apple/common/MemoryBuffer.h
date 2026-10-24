@@ -29,6 +29,8 @@
 
 // stl
 #include <span>
+#include <algorithm>
+#include <utility>
 
 // Darwin
 #include <assert.h>

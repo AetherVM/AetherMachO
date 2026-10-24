@@ -1,4 +1,4 @@
 #pragma once
 
-// We build dyld source code for a standard C/C++ runtime, so keeping this
-// header empty will be fine.
+// Switching the process-wide image info is not supported by the host kernel.
+static inline int proc_set_dyld_all_image_info(void *, unsigned long) { return -1; }

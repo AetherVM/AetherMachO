@@ -57,6 +57,7 @@ extern "C" {
 extern "C" int __cxa_atexit(void (*func)(void*), void* arg, void* dso);
 
 #include "LibSystemHelpers.h"
+#include "ThreadLocalVariables.h"
 #include "DyldProcessConfig.h"
 #include "DyldAPIs.h"
 #include "ThreadLocalVariables.h"
@@ -170,9 +171,7 @@ bool LibSystemHelpers::isLaunchdOwned() const
     return false;
 #else
     // the vproc_swap_integer() call has to be to libSystem.dylib's function - not a static copy in dyld
-    int64_t val = 0;
-    ::vproc_swap_integer(nullptr, VPROC_GSK_IS_MANAGED, nullptr, &val);
-	return ( val != 0 );
+    return false;
 #endif
 }
 
@@ -181,7 +180,8 @@ void LibSystemHelpers::os_unfair_recursive_lock_lock_with_options(dyld_recursive
 #if TARGET_OS_EXCLAVEKIT
     mtx_lock(lock);
 #else
-    ::os_unfair_recursive_lock_lock_with_options(lock, options);
+    (void)options;
+    ::pthread_mutex_lock(lock);
 #endif
 }
 
@@ -190,7 +190,7 @@ void LibSystemHelpers::os_unfair_recursive_lock_unlock(dyld_recursive_mutex_t lo
 #if TARGET_OS_EXCLAVEKIT
     mtx_unlock(lock);
 #else
-    ::os_unfair_recursive_lock_unlock(lock);
+    ::pthread_mutex_unlock(lock);
 #endif
 }
 
@@ -222,7 +222,7 @@ int LibSystemHelpers::mkstemp(char* templatePath) const
 void LibSystemHelpers::os_unfair_recursive_lock_unlock_forked_child(dyld_recursive_mutex_t lock) const
 {
 #if !TARGET_OS_EXCLAVEKIT
-    ::os_unfair_recursive_lock_unlock_forked_child(lock);
+    ::pthread_mutex_unlock(lock);
 #endif
 }
 
@@ -239,7 +239,8 @@ void LibSystemHelpers::os_unfair_lock_lock_with_options(dyld_mutex_t lock, os_un
 #if TARGET_OS_EXCLAVEKIT
     //TODO: EXCLAVES?
 #else
-    ::os_unfair_lock_lock_with_options(lock, options);
+    (void)options;
+    ::pthread_mutex_lock(lock);
 #endif
 }
 void LibSystemHelpers::os_unfair_lock_unlock(dyld_mutex_t lock) const
@@ -247,7 +248,7 @@ void LibSystemHelpers::os_unfair_lock_unlock(dyld_mutex_t lock) const
 #if TARGET_OS_EXCLAVEKIT
     //TODO: EXCLAVES?
 #else
-    ::os_unfair_lock_unlock(lock);
+    ::pthread_mutex_unlock(lock);
 #endif
 }
 
@@ -318,7 +319,7 @@ mach_o::Error LibSystemHelpers::setUpThreadLocals(const DyldSharedCache* cache, 
 bool LibSystemHelpers::os_unfair_recursive_lock_trylock(dyld_recursive_mutex_t lock) const
 {
 #if !TARGET_OS_EXCLAVEKIT
-    return ::os_unfair_recursive_lock_trylock(lock);
+    return ::pthread_mutex_trylock(lock) == 0;
 #else
     return false;
 #endif

@@ -199,7 +199,7 @@ private:
 };
 
 
-#if BUILDING_LIBDYLD
+#if BUILDING_LIBDYLD || BUILDING_DYLD
 extern ThreadLocalVariables sThreadLocalVariables;
 #endif
 

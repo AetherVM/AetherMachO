@@ -27,6 +27,8 @@
 #if !TARGET_OS_EXCLAVEKIT
 
 #include <bit>
+#include <iterator>
+#include <algorithm>
 
 #include "Defines.h"
 #include "BitUtils.h"

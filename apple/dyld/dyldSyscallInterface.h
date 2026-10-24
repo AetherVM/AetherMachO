@@ -59,16 +59,6 @@ struct dyld_all_image_infos;
 
 #define DYLD_SYSCALL_VTABLE_ENTRY(x) __typeof__ (x) *x
 
-// MachOEngine added
-static inline __attribute__((noreturn)) void abort_with_payload(
-    uint32_t reason_namespace, uint64_t reason_code, void *payload,
-    uint32_t payload_size, const char *reason_string, uint64_t reason_flags) {
-    (void)reason_namespace; (void)reason_code; (void)payload;
-    (void)payload_size; (void)reason_string; (void)reason_flags;
-		puts(reason_string);
-    abort();
-}
-
 #if __cplusplus
 namespace dyld {
 #endif

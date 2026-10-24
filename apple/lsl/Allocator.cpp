@@ -113,11 +113,9 @@ void Lock::unlock() {
 
 void Lock::assertNotOwner() {
     if (!_lock) { return; }
-    os_unfair_lock_assert_not_owner(_lock);
 }
 void Lock::assertOwner() {
     if (!_lock) { return; }
-    os_unfair_lock_assert_owner(_lock);
     
 }
 #endif // !TARGET_OS_EXCLAVEKIT

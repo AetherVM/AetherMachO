@@ -3,6 +3,9 @@
 #define KDBG_CODE(...) 0
 #define DBG_DYLD_UUID_MAP_A 0
 #define DBG_DYLD_UUID_UNMAP_A 0
+#define DBG_DYLD_UUID_SHARED_CACHE_A 10
+#define DBG_FUNC_START 1
+#define DBG_FUNC_END 2
 
 static inline bool kdebug_is_enabled(uint32_t code) {
     (void)code;

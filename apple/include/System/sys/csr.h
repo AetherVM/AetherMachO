@@ -1,4 +1,6 @@
 #pragma once
 
-// We build dyld source code for a standard C/C++ runtime, so keeping this
-// header empty will be fine.
+#define CSR_ALLOW_APPLE_INTERNAL (1 << 4)
+
+// SIP state is not queried; the host process is never treated as internal.
+static inline int csr_check(unsigned int) { return -1; }

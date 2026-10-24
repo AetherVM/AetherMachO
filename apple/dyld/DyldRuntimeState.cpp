@@ -183,15 +183,15 @@ RuntimeLocks::RuntimeLocks()
 {
 #if BUILDING_DYLD
   #if !TARGET_OS_EXCLAVEKIT
-    _loadersLock    = OS_UNFAIR_RECURSIVE_LOCK_INIT;
-    _notifiersLock  = OS_UNFAIR_RECURSIVE_LOCK_INIT;
-    _apiLock        = OS_UNFAIR_RECURSIVE_LOCK_INIT;
+    _loadersLock    = PTHREAD_RECURSIVE_MUTEX_INITIALIZER;
+    _notifiersLock  = PTHREAD_RECURSIVE_MUTEX_INITIALIZER;
+    _apiLock        = PTHREAD_RECURSIVE_MUTEX_INITIALIZER;
 
-    allocatorLock   = OS_LOCK_UNFAIR_INIT;
+    allocatorLock   = PTHREAD_MUTEX_INITIALIZER;
     #if !TARGET_OS_SIMULATOR
-    logSerializer   = OS_LOCK_UNFAIR_INIT;
+    logSerializer   = PTHREAD_MUTEX_INITIALIZER;
     #endif // !TARGET_OS_SIMULATOR
-    lazyLoadLock    = OS_LOCK_UNFAIR_INIT;
+    lazyLoadLock    = PTHREAD_MUTEX_INITIALIZER;
   #else
     _loadersLock   = _LIBLIBC_MTX_RECURSIVE_INIT;
     _notifiersLock = _LIBLIBC_MTX_RECURSIVE_INIT;
@@ -279,11 +279,11 @@ void RuntimeLocks::resetLockInForkChild()
     if ( (this->_libSystemHelpers != nullptr) && (this->_libSystemHelpers.version() >= 2) ) {
         this->_libSystemHelpers.os_unfair_recursive_lock_unlock_forked_child(&_loadersLock);
         this->_libSystemHelpers.os_unfair_recursive_lock_unlock_forked_child(&_notifiersLock);
-        allocatorLock    = OS_LOCK_UNFAIR_INIT;
+        allocatorLock    = PTHREAD_MUTEX_INITIALIZER;
 #if !TARGET_OS_SIMULATOR
-        logSerializer    = OS_LOCK_UNFAIR_INIT;
+        logSerializer    = PTHREAD_MUTEX_INITIALIZER;
 #endif // !TARGET_OS_SIMULATOR
-        lazyLoadLock     = OS_LOCK_UNFAIR_INIT;
+        lazyLoadLock     = PTHREAD_MUTEX_INITIALIZER;
     }
 #endif // BUILDING_DYLD && !TARGET_OS_EXCLAVEKIT
 }
@@ -839,7 +839,7 @@ void RuntimeState::vlog(const char* format, va_list list)
 #else
 #if BUILDING_DYLD && !TARGET_OS_SIMULATOR
     // prevent multi-thread log() calls from intermingling their text
-    os_unfair_lock_lock(&locks.logSerializer);
+    pthread_mutex_lock(&locks.logSerializer);
 #endif  // BUILDING_DYLD && !TARGET_OS_SIMULATOR
     // lazy initialize logging output
     if ( !_logSetUp )
@@ -866,7 +866,7 @@ void RuntimeState::vlog(const char* format, va_list list)
     }
 
 #if BUILDING_DYLD && !TARGET_OS_SIMULATOR
-    os_unfair_lock_unlock(&locks.logSerializer);
+    pthread_mutex_unlock(&locks.logSerializer);
 #endif // BUILDING_DYLD && !TARGET_OS_SIMULATOR
 #endif // BUILDING_CLOSURE_UTIL
 #endif // TARGET_OS_EXCLAVEKIT

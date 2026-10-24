@@ -29,6 +29,7 @@
 
 #include <mach-o/loader.h>
 #include <Availability.h>
+#include <os/availability.h>
 
 #include <TargetConditionals.h>
 

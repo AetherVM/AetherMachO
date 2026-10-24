@@ -7,7 +7,9 @@
 
 #include <DyldAPIs.h>
 #include <DyldDelegates.h>
+#include <ChainedFixups.h>
 #include <DyldProcessConfig.h>
+#include <SharedCacheRuntime.h>
 #include <crt_externs.h>
 #include <mach-o/ldsyms.h>
 #include <new>
@@ -70,6 +72,23 @@ __attribute__((constructor)) void initializeAPIs(int argc, const char *argv[],
 }
 
 } // namespace
+
+// Emulated processes never map the system dyld shared cache.
+bool dyld3::loadDyldCache(const SharedCacheOptions &,
+                          SharedCacheLoadInfo *results) {
+  results->loadAddress = nullptr;
+  results->slide = 0;
+  results->errorMessage = "dyld shared cache is not supported";
+  results->cacheFileFound = false;
+  return false;
+}
+
+// Only the writer side encodes chains, which the loader never does.
+mach_o::Error mach_o::ChainedFixups::PointerFormat::writeChainEntry(
+    const Fixup &, const void *, uint64_t,
+    std::span<const MappedSegment *>) const {
+  return mach_o::Error("writing chained fixups is not supported");
+}
 
 void *aether_dlopen(const char *path, int mode) {
   return gAPIs ? gAPIs->dlopen(path, mode) : nullptr;
