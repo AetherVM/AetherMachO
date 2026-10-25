@@ -70,6 +70,10 @@
 #include "Universal.h"
 #include "Image.h"
 
+namespace aether {
+void notify_loaded_module(std::string_view path, uint64_t base, uint64_t end);
+} // namespace aether
+
 #if !TARGET_OS_EXCLAVEKIT
 // internal libc.a variable that needs to be reset during fork()
 extern mach_port_t mach_task_self_;
@@ -1628,6 +1632,14 @@ void* APIs::dlopen_from(const char* path, int mode, void* addressInCaller)
                     }
                 }
 #endif
+                // MachOEngine added: let AetherVM load newly loaded images' metadata
+                for ( const Loader* ldr : newlyNotDelayed ) {
+                    if ( ldr->dylibInDyldCache )
+                        continue;
+                    auto base = reinterpret_cast<uint64_t>(ldr->header(*this));
+                    auto end = base + reinterpret_cast<MachOFile *>(base)->mappedSize();
+                    aether::notify_loaded_module(ldr->path(*this), base, end);
+                }
                 doSingletonPatching(cacheDataConst);
                 notifyObjCPatching();
             }

@@ -87,9 +87,17 @@ bool MachOEngine::preEncode() {
   return total > 0;
 }
 
-addr_t MachOEngine::recursiveLoad(
-    std::function<std::string(std::string_view path, addr_t base, addr_t end)>
-        on_loaded_module) {
+static const OnLoadedModule *on_loaded_module_callback;
+
+void notify_loaded_module(std::string_view path, uint64_t base, uint64_t end) {
+  auto msg = (*on_loaded_module_callback)(path, base, end);
+  if (!msg.empty())
+    log_print(RuntimeRaw, "When loading module {}: {}", path, msg);
+}
+
+addr_t MachOEngine::recursiveLoad(const OnLoadedModule &on_loaded_module) {
+  on_loaded_module_callback = &on_loaded_module;
+
   auto handle = aether_dlopen(m_path.c_str(), RTLD_NOW | RTLD_LOCAL);
   if (!handle) {
     auto err = aether_dlerror();

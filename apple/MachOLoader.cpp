@@ -84,6 +84,7 @@ __attribute__((constructor)) void initializeAPIs(int argc, const char *argv[],
                                &lsl::MemoryManager::memoryManager()};
     // Starts using the locks and sets up dlerror storage and TLVs.
     gAPIs->_libdyld_initialize();
+    gAPIs->setLibSystemInitialized();
   });
 }
 
