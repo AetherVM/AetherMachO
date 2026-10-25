@@ -107,6 +107,9 @@ bool JustInTimeLoader::contains(RuntimeState& state, const void* addr, const voi
     uint64_t             slide      = (uintptr_t)hdr - vmTextAddr;
     uint64_t             targetAddr = (uint64_t)addr;
     hdr->forEachSegment(^(const UnsafeHeader::SegmentInfo& info, bool& stop) {
+        // MachOEngine modified: executables have a __PAGEZERO that is never mapped
+        if ( info.segmentName == "__PAGEZERO" )
+            return;
         if ( ((info.vmaddr + slide) <= targetAddr) && (targetAddr < (info.vmaddr + slide + info.vmsize)) ) {
             *segAddr  = (void*)(info.vmaddr + slide);
             *segSize  = info.vmsize;
@@ -1204,6 +1207,9 @@ void JustInTimeLoader::withRegions(const MachOFile* mf, void (^callback)(const A
     uint32_t segCount   = hdr->segmentCount();
     STACK_ALLOC_ARRAY(Region, regions, segCount * 2);
     hdr->forEachSegment(^(const UnsafeHeader::SegmentInfo& segInfo, bool& stop) {
+        // MachOEngine modified: executables have a __PAGEZERO that is never mapped
+        if ( segInfo.segmentName == "__PAGEZERO" )
+            return;
         Region region;
         if ( !segInfo.hasZeroFill() || (segInfo.fileSize != 0) ) {
             // add region for content that is not wholely zerofill

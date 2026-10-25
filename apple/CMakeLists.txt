@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: APSL Version 2.0
 # See APPLE_LICENSE file in the root directory for full license text.
 
+enable_language(ASM)
+
 add_library(MachOLoader STATIC
   MachOLoader.cpp
   common/AAREncoder.cpp
@@ -41,6 +43,7 @@ add_library(MachOLoader STATIC
   dyld/dyldMain.cpp
   libdyld/LibSystemHelpers.cpp
   libdyld/ThreadLocalVariables.cpp
+  libdyld/threadLocalHelpers.s
   lsl/Allocator.cpp
   lsl/PVLEInt64.cpp
   lsl/ProtectedStack.s
@@ -73,6 +76,23 @@ add_library(MachOLoader STATIC
   mach_o/UnsafeHeader.cpp
   mach_o/Version32.cpp
   mach_o/Version64.cpp
+)
+
+# The assembly sources use the C preprocessor.
+set_source_files_properties(
+  lsl/ProtectedStack.s
+  libdyld/threadLocalHelpers.s
+  PROPERTIES COMPILE_FLAGS "-x assembler-with-cpp"
+)
+
+# Defines sThreadLocalVariables, and the thread exit handler that uses it.
+set_source_files_properties(libdyld/ThreadLocalVariables.cpp
+  PROPERTIES COMPILE_DEFINITIONS BUILDING_LIBDYLD=1
+)
+
+# Skips the lazy-load trampoline, which needs the full libdyld.
+set_source_files_properties(libdyld/threadLocalHelpers.s
+  PROPERTIES COMPILE_DEFINITIONS BUILDING_UNIT_TESTS=1
 )
 
 target_compile_definitions(MachOLoader PRIVATE

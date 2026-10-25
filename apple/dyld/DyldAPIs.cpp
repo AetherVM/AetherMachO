@@ -1302,6 +1302,20 @@ const Loader* APIs::findImageContaining(const void* addr)
             }
         }
     });
+
+    // MachOEngine modified: callers outside any loaded image (e.g. the host
+    // process embedding this loader) resolve to a static loader of the host
+    // executable, which is never added to the loaded list.
+    if ( result == nullptr ) {
+        result = mainExecutableLoader;
+        if ( result == nullptr ) {
+            static const Loader* hostLoader = ^{
+                Diagnostics diag;
+                return (const Loader*)JustInTimeLoader::makeLaunchLoader(diag, *this);
+            }();
+            result = hostLoader;
+        }
+    }
     return result;
 }
 

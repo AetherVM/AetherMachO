@@ -9,6 +9,7 @@
 #include <DyldAPIs.h>
 #include <DyldDelegates.h>
 #include <DyldProcessConfig.h>
+#include <LibSystemHelpers.h>
 #include <Loader.h>
 #include <SharedCacheRuntime.h>
 #include <UnsafeHeader.h>
@@ -32,6 +33,10 @@ namespace {
 APIs *gAPIs = nullptr;
 
 KernelArgs gKernelArgs;
+
+// We run inside a normal process, so the helpers simply forward to the regular
+// libSystem functions.
+const dyld4::LibSystemHelpers gLibSystemHelpers;
 SyscallDelegate gSyscallDelegate;
 
 // Module initializers receive the process arguments from dyld, and
@@ -75,10 +80,20 @@ __attribute__((constructor)) void initializeAPIs(int argc, const char *argv[],
             ProcessConfig(&gKernelArgs, gSyscallDelegate, allocator);
     gAPIs = new (allocator.aligned_alloc(alignof(APIs), sizeof(APIs)))
         APIs(config, locks, allocator);
+    gAPIs->libSystemHelpers = {&gLibSystemHelpers,
+                               &lsl::MemoryManager::memoryManager()};
+    // Starts using the locks and sets up dlerror storage and TLVs.
+    gAPIs->_libdyld_initialize();
   });
 }
 
 } // namespace
+
+// Referenced by the _tlv_bootstrap stub in threadLocalHelpers.s, which is hit
+// when a thread local is used before its image has been set up.
+extern "C" __attribute__((visibility("hidden"))) void _tlv_bootstrap_error() {
+  abort();
+}
 
 // Emulated processes never map the system dyld shared cache.
 bool dyld3::loadDyldCache(const SharedCacheOptions &,
