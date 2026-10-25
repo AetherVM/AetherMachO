@@ -87,7 +87,9 @@ bool MachOEngine::preEncode() {
   return total > 0;
 }
 
-addr_t MachOEngine::recursiveLoad() {
+addr_t MachOEngine::recursiveLoad(
+    std::function<std::string(std::string_view path, addr_t base, addr_t end)>
+        on_loaded_module) {
   auto handle = aether_dlopen(m_path.c_str(), RTLD_NOW | RTLD_LOCAL);
   if (!handle) {
     auto err = aether_dlerror();

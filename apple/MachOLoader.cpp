@@ -42,6 +42,8 @@ __attribute__((constructor)) void initializeAPIs(int argc, const char *argv[],
                                                  const char *apple[]) {
   if (gAPIs)
     return;
+  lsl::MemoryManager::init(envp, apple);
+
   size_t n = 0;
   auto append = [&](const char *s) {
     if (n < MAX_KERNEL_ARGS)

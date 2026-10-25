@@ -35,7 +35,9 @@ public:
   bool hasWXPermission();
 
 protected:
-  addr_t recursiveLoad() override;
+  addr_t recursiveLoad(
+      std::function<std::string(std::string_view path, addr_t base, addr_t end)>
+          on_loaded_module) override;
   void Unload() override;
 
 protected:
