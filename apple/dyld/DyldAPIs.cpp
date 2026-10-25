@@ -1618,6 +1618,9 @@ void* APIs::dlopen_from(const char* path, int mode, void* addressInCaller)
 #if BUILDING_DYLD
                 // if image has thread locals, set them up
                 for ( const Loader* ldr : newlyNotDelayed ) {
+                    // MachOEngine added
+                    if ( ldr->dylibInDyldCache )
+                        continue;
                     if ( ldr->hasTLVs ) {
                         if ( mach_o::Error err = this->libSystemHelpers.setUpThreadLocals(config.dyldCache.addr, ldr->header(*this)) ) {
                             diag.error("failed to set up thread local variables for '%s': %s", ldr->path(*this), err.message());

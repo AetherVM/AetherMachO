@@ -2902,7 +2902,9 @@ void halt(const char* message, const StructuredError* errorInfo)
     strlcpy(error_string, message, sizeof(error_string));
     CRSetCrashLogMessage(error_string);
     console("%s\n", message);
+#if HAS_EXTERNAL_STATE
     setExternallyViewableStateToTerminated(error_string);
+#endif // HAS_EXTERNAL_STATE
     /*
     if ( sSharedCacheLoadInfo.errorMessage != nullptr ) {
         // <rdar://problem/45957449> if dyld fails with a missing dylib and there is no shared cache, display the shared cache load error message

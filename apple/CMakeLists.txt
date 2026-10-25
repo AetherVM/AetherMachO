@@ -32,7 +32,6 @@ add_library(MachOLoader STATIC
   dyld/DyldDelegates.cpp
   dyld/DyldProcessConfig.cpp
   dyld/DyldRuntimeState.cpp
-  dyld/ExternallyViewableState.cpp
   dyld/JustInTimeLoader.cpp
   dyld/Loader.cpp
   dyld/PrebuiltLoader.cpp

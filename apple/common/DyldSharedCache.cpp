@@ -422,7 +422,8 @@ bool DyldSharedCache::inDyldCache(const DyldSharedCache* cache, const dyld3::Mac
 }
 
 bool DyldSharedCache::inDyldCache(const DyldSharedCache* cache, const mach_o::UnsafeHeader* header) {
-    return header->inDyldCache() && (cache != nullptr) && ((uintptr_t)header >= (uintptr_t)cache) && ((uintptr_t)header < ((uintptr_t)cache + cache->mappedSize()));
+    // MachOEngine modified
+    return header->inDyldCache();// && (cache != nullptr) && ((uintptr_t)header >= (uintptr_t)cache) && ((uintptr_t)header < ((uintptr_t)cache + cache->mappedSize()));
 }
 
 #if BUILDING_CACHE_BUILDER

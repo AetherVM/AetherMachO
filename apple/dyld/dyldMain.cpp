@@ -220,11 +220,6 @@ static void sim_notifyMonitorOfMainCalled()
 static void sim_notifyMonitorOfDyldBeforeInitializers()
 {
 }
-
-static void halt(const char *msg) {
-    puts(msg);
-    abort();
-}
 #endif
 
 // These are syscalls that the macOS dyld makes available to dyld_sim

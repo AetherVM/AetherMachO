@@ -23,6 +23,10 @@
 
 #include <assert.h>
 #include <strings.h>
+#include <dlfcn.h>
+#include <limits.h>
+#include <stdlib.h>
+#include <mach-o/dyld.h>
 
 #include <TargetConditionals.h>
 #if !TARGET_OS_EXCLAVEKIT
@@ -465,6 +469,29 @@ const Loader::DylibPatch* JustInTimeLoader::makePatchTable(RuntimeState& state, 
     return nullptr;
 }
 
+// Loads the library with the host's dyld (if needed) and returns its mach header.
+static const MachOFile* findHostImage(const char* path)
+{
+    if ( ::dlopen(path, RTLD_NOW | RTLD_GLOBAL) == nullptr )
+        return nullptr;
+    uint32_t count = ::_dyld_image_count();
+    for ( uint32_t i = 0; i < count; ++i ) {
+        const char* name = ::_dyld_get_image_name(i);
+        if ( (name != nullptr) && (strcmp(name, path) == 0) )
+            return (const MachOFile*)::_dyld_get_image_header(i);
+    }
+    // path may be an alias (symlink) of the image's real name
+    char realPath[PATH_MAX];
+    if ( ::realpath(path, realPath) != nullptr ) {
+        for ( uint32_t i = 0; i < count; ++i ) {
+            const char* name = ::_dyld_get_image_name(i);
+            if ( (name != nullptr) && (strcmp(name, realPath) == 0) )
+                return (const MachOFile*)::_dyld_get_image_header(i);
+        }
+    }
+    return nullptr;
+}
+
 void JustInTimeLoader::loadDependents(Diagnostics& diag, RuntimeState& state, const LoadOptions& options)
 {
     if ( dependentsSet )
@@ -507,6 +534,17 @@ void JustInTimeLoader::loadDependents(Diagnostics& diag, RuntimeState& state, co
                 if ( ldr->matchesPath(state, loadPath) ) {
                     depLoader = ldr;
                     break;
+                }
+            }
+            // MachOEngine modified: only user mach-o files are loaded from disk. System libraries
+            // are not on disk (or must not be duplicated), so adopt the image the host process loaded.
+            if ( depLoader == nullptr ) {
+                if ( const MachOFile* hostMF = findHostImage(loadPath) ) {
+                    JustInTimeLoader* hostLoader = JustInTimeLoader::make(state, hostMF, loadPath, FileID::none(), 0, true, false, false, 0, nullptr);
+                    hostLoader->fixUpsApplied = true;
+                    hostLoader->inited        = true;
+                    hostLoader->finishedInits = true;
+                    depLoader = hostLoader;
                 }
             }
         }
@@ -778,6 +816,10 @@ void JustInTimeLoader::applyFixups(Diagnostics& diag, RuntimeState& state, DyldC
                                    lsl::Vector<PseudoDylibSymbolToMaterialize>* materializingSymbols) const
 {
     //state.log("applyFixups: %s\n", this->path(state));
+
+    // MachOEngine modified: images adopted from the host process are already fixed up
+    if ( this->fixUpsApplied )
+        return;
 
     // check if we need to patch the cache
     this->applyFixupsCheckCachePatching(state, cacheDataConst);
@@ -1460,6 +1502,16 @@ Loader* JustInTimeLoader::makeJustInTimeLoaderDisk(Diagnostics& diag, RuntimeSta
 #if !BUILDING_CACHE_BUILDER && !BUILDING_CACHE_BUILDER_UNIT_TESTS
 Loader* JustInTimeLoader::makeLaunchLoader(Diagnostics& diag, RuntimeState& state)
 {
+    // MachOEngine modified
+#if 1
+    auto loadPath = "/usr/lib/libSystem.B.dylib";
+    auto libSystem = findHostImage(loadPath);
+    JustInTimeLoader* hostLoader = JustInTimeLoader::make(state, libSystem, loadPath, FileID::none(), 0, true, false, false, 0, nullptr);
+    hostLoader->fixUpsApplied = true;
+    hostLoader->inited        = true;
+    hostLoader->finishedInits = true;
+    return hostLoader;
+#else
     // check if main executable is valid mach-o
     if ( mach_o::Error err = state.config.process.mainExecutableHdr->valid(state.config.process.mainExecutableSliceSize) ) {
         diag.error("%s", err.message());
@@ -1470,6 +1522,7 @@ Loader* JustInTimeLoader::makeLaunchLoader(Diagnostics& diag, RuntimeState& stat
     uint64_t mainSliceOffset = Loader::getOnDiskBinarySliceOffset(state, state.config.process.mainExecutableMF, state.config.process.mainExecutablePath);
     state.config.syscall.fileExists(state.config.process.mainExecutablePath, &mainFileID);
     return JustInTimeLoader::make(state, state.config.process.mainExecutableMF, state.config.process.mainExecutablePath, mainFileID, mainSliceOffset, true, false, false, 0, nullptr);
+#endif
 }
 #else
 Loader* JustInTimeLoader::makeLaunchLoader(Diagnostics& diag, RuntimeState& state, const MachOFile* mainExe, const char* mainExePath,

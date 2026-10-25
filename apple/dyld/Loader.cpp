@@ -2828,6 +2828,9 @@ void Loader::addWeakDefsToMap(RuntimeState& state, const std::span<const Loader*
             continue;
         if ( ldr->hiddenFromFlat() )
             continue;
+        // MachOEngine modified: images adopted from the host's dyld cache are already bound
+        if ( ((const UnsafeHeader*)ma)->inDyldCache() && (state.config.dyldCache.addr == nullptr) )
+            continue;
 
         // NOTE: using the nlist is faster to scan for weak-def exports, than iterating the exports trie
         Diagnostics diag;

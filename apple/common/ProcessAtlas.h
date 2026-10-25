@@ -27,6 +27,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <iterator>
 #include <TargetConditionals.h>
 #include "Defines.h"
 #if !TARGET_OS_EXCLAVEKIT
