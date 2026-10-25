@@ -1439,10 +1439,11 @@ Loader* JustInTimeLoader::makeJustInTimeLoaderDisk(Diagnostics& diag, RuntimeSta
             }
             fileValidation.sliceOffset     = (uint8_t*)mf - (uint8_t*)mapping;
 
+            // MachOEngine modified: no code signature required, guests run in AetherVM
             // Check code signature
-            CodeSignatureInFile  codeSignature;
-            bool hasCodeSignature = ((const UnsafeHeader*)ma)->hasCodeSignature(codeSignature.fileOffset, codeSignature.size);
-#if BUILDING_DYLD
+            CodeSignatureInFile  codeSignature{};
+            bool hasCodeSignature = false; // ((const UnsafeHeader*)ma)->hasCodeSignature(codeSignature.fileOffset, codeSignature.size);
+#if 0 // BUILDING_DYLD
             if ( hasCodeSignature && codeSignature.size != 0 ) {
                 uuid_t uuid;
                 ((UnsafeHeader*)ma)->getUuid(uuid);

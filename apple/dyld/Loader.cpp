@@ -1543,6 +1543,10 @@ uint64_t Loader::validateFile(Diagnostics& diag, const RuntimeState& state, int 
         }
         return fileValidation.sliceOffset;
     }
+    else if (1) {
+        // MachOEngine modified: guests run in AetherVM, so the code signature is not checked
+        return fileValidation.sliceOffset;
+    }
     else if ( codeSignature.size != 0 ) {
 #if !TARGET_OS_SIMULATOR // some hashing functions not available in .a files
         // otherwise compare cdHash
@@ -1615,7 +1619,8 @@ const MachOAnalyzer* Loader::mapSegments(Diagnostics& diag, RuntimeState& state,
         return nullptr;
     }
 
-#if BUILDING_DYLD
+    // MachOEngine modified: no code signature registration or F_CHECK_LV, guests run in AetherVM
+#if 0 //BUILDING_DYLD
     // register code signature
     if ( hasCodeSignature && codeSignature.size != 0 ) {
         char uuidStr[64];
@@ -1691,7 +1696,8 @@ const MachOAnalyzer* Loader::mapSegments(Diagnostics& diag, RuntimeState& state,
         int flags = MAP_FIXED | MAP_PRIVATE;
 
 #if BUILDING_DYLD
-        perms = region.perms;
+        // MachOEngine modified: guest code is never executed natively, so never map PROT_EXEC
+        perms = region.perms & ~VM_PROT_EXECUTE;
 #endif
         if (enableTpro && region.readOnlyData) {
             flags |= MAP_TPRO;
