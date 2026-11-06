@@ -35,5 +35,7 @@ fn main() {
 
     println!("cargo:rustc-link-search=native={}", lib_dir.display());
     println!("cargo:rustc-link-lib=dylib=MachOEngine");
-    println!("cargo:rustc-link-arg=-Wl,-rpath,{}", lib_dir.display());
+    if env::var("PROFILE").is_ok_and(|profile| profile == "debug") {
+        println!("cargo:rustc-link-arg=-Wl,-rpath,{}", lib_dir.display());
+    }
 }
